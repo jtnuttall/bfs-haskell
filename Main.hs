@@ -4,7 +4,6 @@
 --
 -- Author: Jeremy Nuttall
 -------------------------------------------------------------------------------
-
 module Main where
 
 import Types.Queue
@@ -29,7 +28,6 @@ bfs start finish maze =
               moves   = filter (`M.notMember` preds) $ getMoves maze l
               q''     = listApp moves q'
 
-
 main :: IO()
 main = do
     args <- getArgs
@@ -48,5 +46,4 @@ main = do
                     putStrLn rc
                     forM_ (render maze $ tail path) putStrLn
                 Nothing   -> putStrLn "No path could be found!"
-        Nothing -> putStrLn "Invalid maze."
-
+        Nothing   -> putStrLn "Invalid maze."

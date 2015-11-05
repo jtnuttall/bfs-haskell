@@ -4,7 +4,6 @@
 --
 -- Author: Jeremy Nuttall
 -------------------------------------------------------------------------------
-
 module Proc.Maze (
       Loc
     , loc
@@ -17,18 +16,19 @@ module Proc.Maze (
 
 import Control.Lens (element)
 import Control.Lens.Setter ((.~))
-import Control.Monad (forM_)
+import Control.Monad (forM_,liftM2)
 import Control.Monad.ST (runST)
-import qualified Data.Map.Strict as M
+import qualified Data.Map.Strict as M (Map,insert,lookup)
 import Data.STRef (readSTRef, modifySTRef, newSTRef)
 import Data.List (findIndices)
 import Data.Maybe (fromMaybe)
-import Data.Monoid ((<>))
 import Prelude hiding (init)
 
 -------------------------------------------------------------------------------
 -- Location type
 -------------------------------------------------------------------------------
+-- Loc is just a synonym for tuple that makes the program more expressive. It
+-- also allows functor mapping.
 newtype Loc a = Loc (a,a)
     deriving (Show,Eq,Ord)
 
@@ -46,8 +46,7 @@ getCol (Loc (x,_)) = x
 -------------------------------------------------------------------------------
 -- Maze operations
 -------------------------------------------------------------------------------
-
--- Parse maze as list of bools (true for open, false for wall
+-- Parse maze as list of bools (true for open, false for wall)
 parseMaze :: [[Char]] -> [[Bool]]
 parseMaze = fmap $ fmap (/= '#')
 
@@ -79,10 +78,9 @@ accMaybe xs (Loc (x, y))
 -- Get all possible moves for a given location
 getMoves :: [[Bool]] -> Loc Int -> [Loc Int]
 getMoves maze (Loc (x, y))
-  | not $ maze !! y !! x = []
-  | otherwise            = scrub nwse
-    where
-        nwse  = [loc x (y+1), loc (x+1) y, loc x (y-1), loc (x-1) y]
+    | not $ maze !! y !! x = []
+    | otherwise            = scrub nwse
+  where nwse  = [loc x (y+1), loc (x+1) y, loc x (y-1), loc (x-1) y]
         scrub = filter $ fromMaybe False . accMaybe maze
 
 -- The render function produces a maze with asterisks on the shortest route 
@@ -96,7 +94,6 @@ render maze (Loc (x,y):locs) = render lensed locs
 -- Operation on predecessor map
 -- Predecessor map has form: children -> predecessors
 -------------------------------------------------------------------------------
-
 -- Insert a list of children into the map
 insert :: [Loc Int] -> Loc Int -> M.Map (Loc Int) (Loc Int) 
                                -> M.Map (Loc Int) (Loc Int)
@@ -113,5 +110,5 @@ chain begin start = chain' begin
             | c == start = Just []
             | otherwise  = 
                 case M.lookup c locs of
-                  Just location -> Just [c] <> chain' location locs
-                  Nothing -> Nothing
+                  Just location -> liftM2 (:) (Just c) $ chain' location locs
+                  Nothing       -> Nothing

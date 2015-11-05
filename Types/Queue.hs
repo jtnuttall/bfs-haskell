@@ -4,7 +4,6 @@
 -- 
 -- Author: Jeremy Nuttall
 -------------------------------------------------------------------------------
-
 module Types.Queue (
       Queue
     , singleton
