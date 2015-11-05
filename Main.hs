@@ -9,7 +9,7 @@ module Main where
 import Types.Queue
 import Proc.Maze
 import Control.Monad (forM_)
-import qualified Data.Map.Strict as M (notMember,singleton)
+import qualified Data.Map.Lazy as M (notMember,singleton)
 import System.Environment (getArgs)
 
 bfs :: Loc Int -> Loc Int -> [[Bool]] -> Maybe [Loc Int]
