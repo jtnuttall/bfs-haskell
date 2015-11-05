@@ -57,7 +57,7 @@ executable bfs
   -- other-extensions:    
   
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.8 && <4.9, containers >=0.5 && <0.6, lens >=4.13 && <4.14, deepseq
+  build-depends:       base >=4.8 && <4.9, containers >=0.5 && <0.6, lens >=4.13 && <4.14
   
   -- Directories containing source files.
   -- hs-source-dirs:      
