@@ -7,7 +7,6 @@
 module Proc.Maze (
       Loc
     , loc
-    , parseMaze
     , getSF
     , getMoves
     , render
@@ -16,13 +15,11 @@ module Proc.Maze (
 
 import Control.Lens (element)
 import Control.Lens.Setter ((.~))
-import Control.Monad (forM_,liftM2)
-import Control.Monad.ST (runST)
+import Control.Monad (liftM2)
 import qualified Data.Map.Lazy as M (Map,insert,lookup)
-import Data.STRef (readSTRef, modifySTRef, newSTRef)
+import qualified Data.ByteString.Char8 as C (ByteString,elemIndices,length
+                                             ,index)
 import Data.List (findIndices)
-import Data.Maybe (fromMaybe)
-import Prelude hiding (init)
 
 -------------------------------------------------------------------------------
 -- Location type
@@ -42,53 +39,51 @@ loc x y = Loc (x, y)
 -- EQ of fst on a tuple
 getCol :: Loc a -> a
 getCol (Loc (x,_)) = x
+{-# INLINE getCol #-}
 
 -------------------------------------------------------------------------------
 -- Maze operations
 -------------------------------------------------------------------------------
--- Parse maze as list of bools (true for open, false for wall)
-parseMaze :: [[Char]] -> [[Bool]]
-parseMaze = fmap $ fmap (/= '#')
+isOpen :: Char -> Bool
+isOpen = (/= '#')
+{-# INLINE isOpen #-}
 
 -- Get the start and finish locations
-getSF :: [[Char]] -> Maybe (Loc Int, Loc Int)
+getSF :: [C.ByteString] -> Maybe (Loc Int, Loc Int)
 getSF contents
     | length (getCol s) /= 1 || length (getCol f) /= 1 = Nothing
     | otherwise = Just (fmap head s, fmap head f)
   where s = findRC 'S'
         f = findRC 'F'
-        findRC ch = let init = map (findIndices (== ch)) contents
-                        row  = findIndices (not . null) init
-                        col  = concat init
+        findRC ch = let rc   = map (C.elemIndices ch) contents
+                        row  = findIndices (not . null) rc
+                        col  = concat rc
                     in loc col row
 
 -- Returns a location if and only if it is within the bounds of the maze
-accMaybe :: [[a]] -> Loc Int -> Maybe a
-accMaybe xs (Loc (x, y))
-    | inBounds  = Just $ xs !! y !! x
-    | otherwise = Nothing
-  where
-      inBounds = and [  
-                        x >= 0 
-                      , x < length (head xs)
-                      , y >= 0 
-                      , y < length xs
-                     ]
+canAccess :: [C.ByteString] -> Loc Int -> Bool
+canAccess xs (Loc (x, y)) = and [  
+                                  x >= 0 
+                                , x < C.length (head xs)
+                                , y >= 0 
+                                , y < length xs
+                              ]
+{-# INLINE canAccess #-}
 
 -- Get all possible moves for a given location
-getMoves :: [[Bool]] -> Loc Int -> [Loc Int]
+getMoves :: [C.ByteString] -> Loc Int -> [Loc Int]
 getMoves maze (Loc (x, y))
-    | not $ maze !! y !! x = []
+    | not . isOpen $ maze !! y `C.index` x = []
     | otherwise            = scrub nwse
   where nwse  = [loc x (y+1), loc (x+1) y, loc x (y-1), loc (x-1) y]
-        scrub = filter $ fromMaybe False . accMaybe maze
+        scrub = filter $ canAccess maze
 
 -- The render function produces a maze with asterisks on the shortest route 
 -- using a lens
 render :: [[Char]] -> [Loc Int] -> [[Char]]
 render maze []               = maze
-render maze (Loc (x,y):locs) = render lensed locs
-    where lensed = element y . element x .~ '*' $ maze
+render maze (Loc (x,y):locs) = render mutate locs
+    where mutate = element y . element x .~ '*' $ maze
 
 -------------------------------------------------------------------------------
 -- Operation on predecessor map
@@ -97,10 +92,8 @@ render maze (Loc (x,y):locs) = render lensed locs
 -- Insert a list of children into the map
 insert :: [Loc Int] -> Loc Int -> M.Map (Loc Int) (Loc Int) 
                                -> M.Map (Loc Int) (Loc Int)
-insert ks v mp = runST $ do
-    m <- newSTRef mp
-    forM_ ks $ \k -> modifySTRef m $ M.insert k v
-    readSTRef m
+insert []     _ mp = mp
+insert (k:ks) v mp = insert ks v (M.insert k v mp)
 
 -- Trace the map's chain from the finish to the start
 chain :: Loc Int -> Loc Int -> M.Map (Loc Int) (Loc Int) -> Maybe [Loc Int]
@@ -110,5 +103,5 @@ chain begin start = chain' begin
             | c == start = Just []
             | otherwise  = 
                 case M.lookup c locs of
-                  Just location -> liftM2 (:) (Just c) $ chain' location locs
+                  Just location -> liftM2 (:) (Just c) $! chain' location locs
                   Nothing       -> Nothing

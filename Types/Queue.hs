@@ -11,28 +11,24 @@ module Types.Queue (
     , listApp
     , pop) where
 
-import Control.Monad (forM_)
-import Control.Monad.ST (runST)
-import Data.STRef (readSTRef, modifySTRef, newSTRef)
-
 -- Create a queue from two lists using weak head normal form
 data Queue a = Queue ![a] ![a]
 
 -- Construct a queue with a single item
 singleton :: a -> Queue a
 singleton y = Queue [] [y]
+{-# INLINE singleton #-}
 
 -- Test whether the queue is empty
 empty :: Queue a -> Bool
 empty (Queue [] []) = True
 empty _             = False
+{-# INLINE empty #-}
 
--- Append a list of items to the queue using the ST monad
-listApp :: Show a => [a] -> Queue a -> Queue a 
-listApp vs queue = runST $ do
-    q <- newSTRef queue
-    forM_ vs $ \v -> modifySTRef q $ append v
-    readSTRef q
+-- Append a list of items to the queue
+listApp :: [a] -> Queue a -> Queue a 
+listApp []     queue = queue
+listApp (v:vs) queue = listApp vs (append v queue)
   where
     append y (Queue xs ys) = Queue xs (y:ys)
 

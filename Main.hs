@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -O2 -Wall #-}
+{-# LANGUAGE OverloadedStrings #-}
 -------------------------------------------------------------------------------
 -- Main.hs: Central bfs processing, does basic I/O, processing, and BFS
 --
@@ -10,9 +11,11 @@ import Types.Queue
 import Proc.Maze
 import Control.Monad (forM_)
 import qualified Data.Map.Lazy as M (notMember,singleton)
+import qualified Data.ByteString.Char8 as C (ByteString,readFile,filter,null
+                                             ,lines,unpack,putStrLn)
 import System.Environment (getArgs)
 
-bfs :: Loc Int -> Loc Int -> [[Bool]] -> Maybe [Loc Int]
+bfs :: Loc Int -> Loc Int -> [C.ByteString] -> Maybe [Loc Int]
 bfs start finish maze = 
     let preds = M.singleton start finish
         q     = singleton start
@@ -31,19 +34,19 @@ bfs start finish maze =
 main :: IO()
 main = do
     args <- getArgs
-    file <- readFile $ head args
+    file <- C.readFile $ head args
 
-    let (rc, maze) = let lined = lines file 
-                          in (head lined
-                              , filter (not . null) 
-                                  $ map (filter (/= ' ')) 
-                                     $ tail lined)
+    let (rc, maze) = let lined = C.lines file
+                         in (head lined
+                             , filter (not . C.null)
+                                 $ map (C.filter (/= ' '))
+                                   $ tail lined)
 
     case getSF maze of
-        Just (s,f) -> 
-            case bfs s f $ parseMaze maze of
+        Just (start,finish) ->
+            case bfs start finish maze of
                 Just path -> do
-                    putStrLn rc
-                    forM_ (render maze $ tail path) putStrLn
+                    C.putStrLn rc
+                    forM_ (render (map C.unpack maze) $ tail path) putStrLn
                 Nothing   -> putStrLn "No path could be found!"
-        Nothing   -> putStrLn "Invalid maze."
+        Nothing -> putStrLn "Invalid maze."

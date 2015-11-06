@@ -1,3 +1,0 @@
-# bfs-haskell
-
-A simple implementation of BFS in Haskell. Meant to solve a maze. Five sample mazes are in the "tst" folder. This specific implementation assumes a maze with open paths denoted by periods and closed paths denoted by hashtags.
