@@ -10,12 +10,12 @@ module Main where
 import Types.Queue
 import Proc.Maze
 import Control.Monad (forM_)
-import qualified Data.Map.Lazy as M (notMember,singleton)
+import qualified Data.Map.Strict as M (notMember,singleton)
 import qualified Data.ByteString.Char8 as C (ByteString,readFile,filter,null
-                                             ,lines,unpack,putStrLn)
+                                             ,lines,putStrLn)
 import System.Environment (getArgs)
 
-bfs :: Loc Int -> Loc Int -> [C.ByteString] -> Maybe [Loc Int]
+bfs :: Loc -> Loc -> [C.ByteString] -> Maybe [Loc]
 bfs start finish maze = 
     let preds = M.singleton start finish
         q     = singleton start
@@ -47,6 +47,6 @@ main = do
             case bfs start finish maze of
                 Just path -> do
                     C.putStrLn rc
-                    forM_ (render (map C.unpack maze) $ tail path) putStrLn
+                    forM_ (render maze $ tail path) C.putStrLn
                 Nothing   -> putStrLn "No path could be found!"
         Nothing -> putStrLn "Invalid maze."

@@ -37,3 +37,4 @@ pop :: Queue a -> (a, Queue a)
 pop (Queue [] [])     = error "Queue.hs: Trying to pop from empty queue."
 pop (Queue [] ys)     = pop (Queue (reverse ys) [])
 pop (Queue (x:xs) ys) = (x, Queue xs ys)
+{-# INLINE pop #-}
