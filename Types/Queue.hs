@@ -2,6 +2,12 @@
 -------------------------------------------------------------------------------
 -- Queue.hs: Queue type and critical operations
 -- 
+-- *** 
+-- *** This implementation has been adapted from 
+-- *** http://rafal.io/posts/haskell-queues.html
+-- *** and Data.Queue
+-- ***
+--
 -- Author: Jeremy Nuttall
 -------------------------------------------------------------------------------
 module Types.Queue (
