@@ -18,7 +18,7 @@ import Control.Lens (ix)
 import Control.Lens.Setter ((.~))
 import Control.Monad (liftM2)
 import Control.DeepSeq (NFData,($!!))
-import qualified Data.Map.Strict as M (Map,insert,lookup)
+import qualified Data.Map.Lazy as M (Map,insert,lookup)
 import qualified Data.ByteString.Char8 as C (ByteString,elemIndices,length
                                              ,index)
 import Data.List (findIndices)
@@ -41,6 +41,12 @@ isOpen :: Char -> Bool
 isOpen = (/= '#')
 {-# INLINE isOpen #-}
 
+lNE1 :: [a] -> Bool
+lNE1 (_:_:_) = True
+lNE1 []      = True
+lNE1 _       = False
+{-# INLINE lNE1 #-}
+
 -- Get the start and finish locations
 getSF :: [C.ByteString] -> Maybe (Loc, Loc)
 getSF contents = 
@@ -54,8 +60,9 @@ getSF contents =
         findRC ch = let rc   = map (C.elemIndices ch) contents
                         row  = findIndices (not . null) rc
                         col  = concat rc
-                    in if length col /= 1 || length row /= 1 then Nothing
+                    in if lNE1 col || lNE1 row then Nothing
                        else Just $ loc (head col) (head row)
+{-# INLINE getSF #-}
 
 -- Returns a location if and only if it is within the bounds of the maze
 canAccess :: [C.ByteString] -> Loc -> Bool
@@ -72,12 +79,14 @@ getMoves maze (Loc x y)
     | otherwise                            = scrub nwse
   where nwse  = [loc x (y+1), loc (x+1) y, loc x (y-1), loc (x-1) y]
         scrub = filter (canAccess maze)
+{-# INLINE getMoves #-}
 
 -- The render function produces a maze with asterisks on the shortest route 
 -- using a lens (asterisks have ASCII value 42)
 render :: [C.ByteString] -> [Loc] -> [C.ByteString]
 render maze []               = maze
 render maze ( Loc x y :locs) = render (ix y . ix x .~ 42 $ maze) locs
+{-# INLINABLE render #-}
 
 -------------------------------------------------------------------------------
 -- Operation on predecessor map

@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -O2 -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
 -------------------------------------------------------------------------------
 -- Main.hs: Central bfs processing, does basic I/O, processing, and BFS
 --
@@ -10,7 +9,7 @@ module Main where
 import Types.Queue
 import Proc.Maze
 import Control.Monad (forM_)
-import qualified Data.Map.Strict as M (notMember,singleton)
+import qualified Data.Map.Lazy as M (notMember,singleton)
 import qualified Data.ByteString.Char8 as C (ByteString,readFile,filter,null
                                              ,lines,putStrLn)
 import System.Environment (getArgs)
@@ -24,8 +23,8 @@ bfs start finish maze =
     where
         search preds q
             | empty q          = preds
-            | not $ null moves = search (insert moves l preds) q''
-            | otherwise        = search preds q''
+            | not $ null moves = search (insert moves l preds) $ q''
+            | otherwise        = search preds $ q''
           where
               (l, q') = pop q
               moves   = filter (`M.notMember` preds) $ getMoves maze l
@@ -43,10 +42,10 @@ main = do
                                    $ tail lined)
 
     case getSF maze of
-        Just (start,finish) ->
+        Just (start, finish) ->
             case bfs start finish maze of
                 Just path -> do
                     C.putStrLn rc
                     forM_ (render maze $ tail path) C.putStrLn
-                Nothing   -> putStrLn "No path could be found!"
-        Nothing -> putStrLn "Invalid maze."
+                Nothing   -> error "No path could be found!"
+        Nothing -> error "Invalid maze."
